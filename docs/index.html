@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#16131f" />
+<title>barktrans</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --bg: #16131f;
+    --surface: #211d2e;
+    --surface-2: #2b2640;
+    --ink: #efeafc;
+    --muted: #9a92b5;
+    --brass: #f5b94d;
+    --pos: #ff8a5b;   /* positive valence */
+    --neu: #4fd1c5;   /* neutral valence  */
+    --neg: #6c8cff;   /* negative valence */
+    --accent: var(--brass);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      radial-gradient(120% 90% at 50% -10%, #241f36 0%, var(--bg) 55%) fixed;
+    color: var(--ink);
+    font-family: Inter, system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    display: flex; flex-direction: column; align-items: center;
+    padding: max(20px, env(safe-area-inset-top)) 20px env(safe-area-inset-bottom);
+    min-height: 100%;
+  }
+  .wrap { width: 100%; max-width: 440px; margin: auto; text-align: center; }
+
+  header { margin-bottom: 8px; }
+  .wordmark {
+    font-family: "Baloo 2", sans-serif; font-weight: 800;
+    font-size: 30px; letter-spacing: -0.01em; color: var(--ink);
+  }
+  .wordmark b { color: var(--brass); }
+  .tagline { color: var(--muted); font-size: 15px; margin-top: 2px; }
+
+  /* ---- listening orb (the one bold element) ---- */
+  .orb-wrap { position: relative; width: 240px; height: 240px; margin: 34px auto 10px; }
+  .ring {
+    position: absolute; inset: 0; border-radius: 50%;
+    border: 1px solid rgba(245,185,77,0.25);
+    transform: scale(var(--level, 0));
+    opacity: calc(0.6 - var(--level, 0) * 0.4);
+    transition: transform 70ms linear, opacity 70ms linear;
+  }
+  .ring.r2 { inset: 18px; border-color: rgba(245,185,77,0.18); }
+  .orb {
+    position: absolute; inset: 42px;
+    border: none; cursor: pointer; border-radius: 50%;
+    background: radial-gradient(circle at 50% 38%, var(--surface-2), var(--surface));
+    box-shadow: 0 10px 40px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06);
+    color: var(--ink); font-family: Inter, sans-serif; font-weight: 600; font-size: 16px;
+    display: grid; place-items: center; gap: 6px;
+    transition: transform 90ms linear, box-shadow 200ms ease;
+  }
+  .orb:focus-visible { outline: 3px solid var(--brass); outline-offset: 4px; }
+  .orb .glyph { font-size: 44px; line-height: 1; }
+  .orb .hint { color: var(--muted); font-size: 13.5px; font-weight: 500; }
+  body.listening .orb {
+    box-shadow: 0 0 0 2px var(--brass), 0 10px 46px rgba(245,185,77,0.25);
+  }
+  body.listening .orb .hint { color: var(--brass); }
+
+  /* ---- result card (color = valence) ---- */
+  .result {
+    background: var(--surface);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 22px; padding: 22px 20px;
+    margin-top: 18px; text-align: left;
+    opacity: 0; transform: translateY(8px);
+    transition: opacity 260ms ease, transform 260ms ease, border-color 260ms ease;
+  }
+  .result.show { opacity: 1; transform: none; }
+  .result[data-valence="positive"] { border-color: color-mix(in srgb, var(--pos) 55%, transparent); }
+  .result[data-valence="neutral"]  { border-color: color-mix(in srgb, var(--neu) 55%, transparent); }
+  .result[data-valence="negative"] { border-color: color-mix(in srgb, var(--neg) 55%, transparent); }
+  .headline {
+    font-family: "Baloo 2", sans-serif; font-weight: 800;
+    font-size: clamp(30px, 9vw, 40px); line-height: 1.02; margin: 0;
+  }
+  .result[data-valence="positive"] .headline { color: var(--pos); }
+  .result[data-valence="neutral"]  .headline { color: var(--neu); }
+  .result[data-valence="negative"] .headline { color: var(--neg); }
+  .quote { font-size: 18px; line-height: 1.45; margin: 10px 0 16px; color: var(--ink); }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .chip {
+    font-size: 13px; color: var(--muted);
+    background: var(--surface-2); border-radius: 999px; padding: 5px 11px;
+  }
+  .chip b { color: var(--ink); font-weight: 600; }
+  .hedge { margin-left: auto; font-size: 13px; color: var(--muted); }
+
+  .empty { color: var(--muted); font-size: 15px; line-height: 1.5; margin-top: 18px; }
+
+  /* ---- sensitivity ---- */
+  .controls { margin-top: 22px; display: none; }
+  body.listening .controls { display: block; }
+  .controls label { color: var(--muted); font-size: 13px; display: block; margin-bottom: 8px; }
+  input[type="range"] { width: 100%; accent-color: var(--brass); }
+
+  footer { color: var(--muted); font-size: 12.5px; line-height: 1.5; margin-top: 30px; max-width: 320px; }
+
+  .toast {
+    position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%);
+    background: var(--surface-2); color: var(--ink);
+    padding: 11px 16px; border-radius: 12px; font-size: 14px;
+    border: 1px solid rgba(255,255,255,0.08); max-width: 90vw;
+    opacity: 0; pointer-events: none; transition: opacity 200ms ease;
+  }
+  .toast.show { opacity: 1; }
+
+  @media (prefers-reduced-motion: reduce) {
+    .ring { transition: none; transform: scale(0.4); opacity: 0.25; }
+    .orb, .result { transition: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="wordmark">bark<b>trans</b></div>
+      <div class="tagline">What's your dog on about?</div>
+    </header>
+
+    <div class="orb-wrap">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <button class="orb" id="orb" aria-label="Start listening for barks">
+        <span class="glyph" id="glyph">🐾</span>
+        <span class="hint" id="hint">Tap to listen</span>
+      </button>
+    </div>
+
+    <div class="controls">
+      <label for="sens">Sensitivity — raise it if quiet barks are missed</label>
+      <input type="range" id="sens" min="0.01" max="0.15" step="0.005" value="0.05" />
+    </div>
+
+    <div class="result" id="result" aria-live="polite">
+      <h1 class="headline" id="headline"></h1>
+      <p class="quote" id="quote"></p>
+      <div class="meta">
+        <span class="chip">arousal <b id="arousal"></b></span>
+        <span class="chip">valence <b id="valence"></b></span>
+        <span class="hedge" id="hedge"></span>
+      </div>
+    </div>
+
+    <p class="empty" id="empty">Tap the orb, then let your dog do the talking. Each bark gets a reading.</p>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script src="features.js"></script>
+  <script src="model.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
